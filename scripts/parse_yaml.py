@@ -65,6 +65,7 @@ def list_yaml_files(directory):
     """
     Return YAML files sorted by numeric match ID.
     """
+    print(directory)
     files = [
         f for f in os.listdir(directory)
         if f.endswith(".yaml") or f.endswith(".yml")
@@ -107,6 +108,6 @@ if __name__ == "__main__":
 
     # Print first few matches to verify ordering + dates
     for i, (match_id, match) in enumerate(load_matches()):
-        print(match_id, match["info"]["dates"])
-        if i == 4:
+        print(match_id, match['innings'])
+        if i == 0:
             break
