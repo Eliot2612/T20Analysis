@@ -17,19 +17,25 @@ def compute_data(match):
             continue
 
         for delivery in match["innings"][idx][innings_name]["deliveries"]:
-            total = get_total_runs(delivery)
-            if total in outcomes[innings_name]:
-                outcomes[innings_name][total] += 1
+            outcome = extract_outcome(delivery)
+            if outcome in outcomes[innings_name]:
+                outcomes[innings_name][outcome] += 1
             else:
-                outcomes[innings_name][total] = 1
+                outcomes[innings_name][outcome] = 1
 
     return outcomes
 
 
-def get_total_runs(delivery_obj):
-    """Extract total runs from a delivery object."""
+def extract_outcome(delivery_obj):
     _, delivery = next(iter(delivery_obj.items()))
+
+    # Wicket takes priority
+    if "wicket" in delivery:
+        return "W"
+
+    # Otherwise return total runs
     return delivery["runs"]["total"]
+
 
 def merge_tallies(global_tally, match_tally):
     """Merge match tallies into global tallies."""
@@ -46,7 +52,10 @@ def calc_percentages(tallies):
     percentages_dict = {}
     for innings, counts in tallies.items():
         total_deliveries = sum(counts.values())
-        outcomes = sorted(counts.keys())
+        outcomes = sorted(
+            counts.keys(),
+            key=lambda x: (x == "W", x if isinstance(x, int) else 0)
+        )
         percentages = [counts[o] / total_deliveries * 100 for o in outcomes]
         percentages_dict[innings] = {"outcomes": outcomes, "percentages": percentages}
     return percentages_dict
@@ -71,16 +80,20 @@ def plot_innings_percentages(percentages_dict):
     plt.tight_layout(rect=[0, 0, 1, 0.95])  
     plt.show()
 
-
-if __name__ == "__main__":
-    """
+def produce_statistics():
+    """Produce and plot statistics from all matches."""
     ensure_data_present()
     global_tally = {"1st innings": {}, "2nd innings": {}}
     for match_id, match in load_matches():
         match_outcomes = compute_data(match)
         global_tally = merge_tallies(global_tally, match_outcomes)
-    """
-    global_tally = {'1st innings': {0: 242396, 1: 233114, 2: 46764, 4: 54109, 3: 3615, 6: 17855, 7: 142, 5: 1299}, '2nd innings': {0: 219119, 4: 45759, 1: 192986, 2: 35078, 3: 2618, 6: 14155, 8: 1, 5: 1057, 7: 70}}
+    
     percentages_dict = calc_percentages(global_tally)
     plot_innings_percentages(percentages_dict)
     print(percentages_dict)
+    return percentages_dict
+ 
+
+if __name__ == "__main__":
+    ensure_data_present()
+    produce_statistics()
